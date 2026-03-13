@@ -4,3 +4,5 @@ Odkaz na dataset [tu](https://drive.google.com/drive/folders/18r8kwVrnSRsTf26_CH
 - data/
     - DP/
         - Covid19-256/
+
+WandB key treba vložiť do credentials.ini
