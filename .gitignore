@@ -1,0 +1,8 @@
+/outputs
+/__pycache__
+/models
+/.vscode
+/wandb
+/images/
+/.venv
+/data/DP/Covid19-256/
