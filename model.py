@@ -341,6 +341,116 @@ class UNetAugmentatorTwo(nn.Module):
         x = self.conv6(x)
         return x
 
+class UNetAugmentator256(nn.Module):
+    """Responsible for augmentation of the image using UNet (hue shift) for 256, 256 images."""
+    def __init__(
+            self,
+            image_size: int,
+            learning_rate: float,
+            # weight_decay: float,
+            epochs: int,
+            device: str
+            ) -> None:
+        super().__init__()
+        self.name = "hue_augmentator"
+
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU()
+        )
+
+        self.down1 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU()
+        )
+
+        self.down2 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU()
+        )
+
+        self.up1 = nn.Sequential(
+            nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=2, stride=2),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+        )
+
+        self.conv4 = nn.Sequential(
+            nn.Conv2d(in_channels=256, out_channels=128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU()
+        )
+
+        self.up2 = nn.Sequential(
+            nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=2, stride=2),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+        )
+
+        self.conv5 = nn.Sequential(
+            nn.Conv2d(in_channels=128, out_channels=64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU()
+        )
+
+        self.conv6 = nn.Sequential(
+            nn.Conv2d(in_channels=64, out_channels=3, kernel_size=3, padding=1),
+            nn.BatchNorm2d(3),
+            nn.Tanh()
+        )
+        self.loss_function = MixLoss(ssim_data_range=(0.0, 1.0), device=device)
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
+        
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # B, C, H, W
+        x = x.float()
+
+        # B, 3, 256, 256
+        after_conv1 = self.conv1(x)
+
+        # B, 64, 256, 256
+        after_down1 = self.down1(after_conv1)
+
+        # B, 64, 128, 128
+        after_conv2 = self.conv2(after_down1)
+
+        # B, 128, 128, 128
+        after_down2 = self.down2(after_conv2)
+
+        # B, 128, 64, 64
+        after_conv3 = self.conv3(after_down2)
+
+        # B, 256, 64, 64
+        after_up1 = self.up1(after_conv3)
+
+        # B, 128, 128, 128
+        after_cat1 = torch.cat([after_conv2, after_up1], 1)
+
+        # B, 256, 128, 128
+        after_conv4 = self.conv4(after_cat1)
+
+        # B, 128, 128, 128
+        after_up2 = self.up2(after_conv4)
+
+        # B, 64, 256, 256
+        after_cat2 = torch.cat([after_conv1, after_up2], 1)
+
+        # B, 128, 256, 256
+        after_conv5 = self.conv5(after_cat2)
+
+        # B, 64, 256, 256
+        after_conv6 = self.conv6(after_conv5)
+
+        # B, 3, 256, 256
+        return after_conv6
+
 class UNetAugmentatorSmall(nn.Module):
     """Responsible for augmentation of the image using UNet (hue shift)."""
     def __init__(
@@ -544,12 +654,11 @@ class SVHNClassifier(nn.Module):
         return logits
 
 
-
-
 class CIFAR10Classifier(nn.Module):
-    """Custom model based on model used in DP_old/CIFAR10_fixed_small_inputs.6.
-
-    This is the model described in DP1 Interim.
+    """New classifier for CIFAR10. 
+    
+    As proposed by https://github.com/shashwat-shahi in
+    https://github.com/shashwat-shahi/CIFAR-10-Image-Classification
     """
     def __init__(
             self,
@@ -558,27 +667,79 @@ class CIFAR10Classifier(nn.Module):
         super().__init__()
 
         self.Conv = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1),
+            # conv block 1
+            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, padding=1),
+            nn.ReLU(),
             nn.BatchNorm2d(64),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
             nn.ReLU(),
+            nn.BatchNorm2d(64),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1),
+            nn.Dropout(p=0.2),
+
+            # conv block 2
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1),
+            nn.ReLU(),
             nn.BatchNorm2d(128),
+            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
             nn.ReLU(),
+            nn.BatchNorm2d(128),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            
+            nn.Dropout(p=0.3),
+            # conv block 3
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.BatchNorm2d(256),
+            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.BatchNorm2d(256),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Dropout(p=0.4),
+
+            # fully connected layers
             nn.Flatten(),
-            nn.Linear(in_features=128 * 8 * 8, out_features=128),
+            nn.Linear(4096, 512),
             nn.ReLU(),
-            nn.Linear(in_features=128, out_features=32),
-            nn.ReLU(),
-            nn.Linear(in_features=32, out_features=10),
+            nn.BatchNorm1d(512),
+            nn.Dropout(p=0.5),
+            nn.Linear(512, 10),
             nn.ReLU()
+            
+            # original keras architecture
+            # first conv block
+            # layers.Input(shape=(32, 32, 3)),
+            # layers.Conv2D(64, (3, 3), activation='relu', padding='same'),
+            # layers.BatchNormalization(),
+            # layers.Conv2D(64, (3, 3), activation='relu', padding='same'),
+            # layers.BatchNormalization(),
+            # layers.MaxPooling2D((2, 2)),
+            # layers.Dropout(0.2),
+            # # second conv block
+            # layers.Conv2D(128, (3, 3), activation='relu', padding='same'),
+            # layers.BatchNormalization(),
+            # layers.Conv2D(128, (3, 3), activation='relu', padding='same'),
+            # layers.BatchNormalization(),
+            # layers.MaxPooling2D((2, 2)),
+            # layers.Dropout(0.3),
+            # # second conv block
+            # layers.Conv2D(256, (3, 3), activation='relu', padding='same'),
+            # layers.BatchNormalization(),
+            # layers.Conv2D(256, (3, 3), activation='relu', padding='same'),
+            # layers.BatchNormalization(),
+            # layers.MaxPooling2D((2, 2)),
+            # layers.Dropout(0.4),
+            # # fully connected 
+            # layers.Flatten(),
+            # layers.Dense(512, activation='relu', kernel_regularizer=regularizers.l2(0.001)),
+            # layers.BatchNormalization(),
+            # layers.Dropout(0.5),
+            # layers.Dense(10, activation='softmax')
         )
         self.optimizer = torch.optim.Adam(
             self.parameters(),
             lr=learning_rate,
-            # weight_decay=weight_decay
+            eps=1e-08, # originally written in keras which uses eps=1-08e by default
+            weight_decay=0.001 # originally used regularizer l2 with 0.001 at the penultimate dense (linear) layer
         )
         self.loss_function = nn.CrossEntropyLoss()
 
@@ -599,9 +760,59 @@ class CIFAR10Classifier(nn.Module):
         logits = self.Conv.forward(x)
         return logits
 
-
-
-
+# class CIFAR10Classifier(nn.Module):
+#     """Custom model based on model used in DP_old/CIFAR10_fixed_small_inputs.6.
+# 
+#     This is the model described in DP1 Interim.
+#     """
+#     def __init__(
+#             self,
+#             learning_rate: float
+#             ) -> None:
+#         super().__init__()
+# 
+# vstupna conv, resblok 256 kanalmi
+#         self.Conv = nn.Sequential(
+#             nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1),
+#             nn.BatchNorm2d(64),
+#             nn.ReLU(),
+#             nn.MaxPool2d(kernel_size=2, stride=2),
+#             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1),
+#             nn.BatchNorm2d(128),
+#             nn.ReLU(),
+#             nn.MaxPool2d(kernel_size=2, stride=2),
+#             
+#             nn.Flatten(),
+#             nn.Linear(in_features=128 * 8 * 8, out_features=128),
+#             nn.ReLU(),
+#             nn.Linear(in_features=128, out_features=32),
+#             nn.ReLU(),
+#             nn.Linear(in_features=32, out_features=10),
+#             nn.ReLU()
+#         )
+#         self.optimizer = torch.optim.Adam(
+#             self.parameters(),
+#             lr=learning_rate,
+#             # weight_decay=weight_decay
+#         )
+#         self.loss_function = nn.CrossEntropyLoss()
+# 
+#     def forward(
+#             self,
+#             x: torch.Tensor
+#             ) -> torch.Tensor:
+#         """Compute output based on input x.
+# 
+#         Parameters:
+#         x (torch.Tensor):
+#             input of the network
+# 
+#         Returns:
+#         output of the network
+#         """
+#         x = x.float()
+#         logits = self.Conv.forward(x)
+#         return logits
 
         
 class NeuralNetwork(nn.Module):
@@ -661,6 +872,7 @@ class NeuralNetwork(nn.Module):
 def get_models(
         device: str,
         feature_extractor: str,
+        hue_augmentator: str,
         number_of_classes: int,
         image_size: int,
         primary_learning_rate: float,
@@ -704,20 +916,28 @@ def get_models(
             # weight_decay=primary_weight_decay,
             epochs=epochs
         ).to(device)
-        
-    return (
-        feature_extractor,
-        UNetAugmentatorSmall(
+
+    if hue_augmentator == "hue_augmentator_256":
+        hue_augmentator = UNetAugmentator256(
             image_size=image_size,
             learning_rate=hue_augmentator_learning_rate,
-            # weight_decay=augmentator_weight_decay,
             epochs=epochs,
             device=device
-        ).to(device),
+        ).to(device)
+    else:
+        hue_augmentator = UNetAugmentatorSmall(
+            image_size=image_size,
+            learning_rate=hue_augmentator_learning_rate,
+            epochs=epochs,
+            device=device
+        ).to(device)
+
+    return (
+        feature_extractor,
+        hue_augmentator,
         SpatialTransformerNetwork(
             image_size=image_size,
             learning_rate=affine_augmentator_learning_rate,
-            # weight_decay=augmentator_weight_decay,
             epochs=epochs,
             device=device,
             scaling_bounds=scaling_bounds,

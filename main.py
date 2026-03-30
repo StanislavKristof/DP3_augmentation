@@ -89,6 +89,7 @@ def do_training(trial, cfg):
     primary_model, hue_augmentator, affine_augmentator = get_models(
         device=device,
         feature_extractor=cfg.config.model_info.feature_extractor,
+        hue_augmentator=cfg.config.model_info.hue_augmentator,
         number_of_classes=cfg.datasets.number_of_classes,
         image_size=cfg.datasets.image_size,
         primary_learning_rate=primary_learning_rate,

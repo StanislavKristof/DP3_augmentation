@@ -5,12 +5,13 @@ defaults:
 config:
     model_info:
         feature_extractor: resnet18.a1_in1k # resnet32ts.ra2_in1k # resnet18.a1_in1k # svhn # cifar10 
+        hue_augmentator: hue_augmentator_256
     train_info:
         project: DP3
-        name: Resnet18CovidBoundedFeedbackOn # ResNet18.a1_in1kCIFAR10NoAugment # ResNet18.a1_in1kCovid19NoAugment # Resnet18CovidBoundedFeedbackOn
+        name: Resnet18CovidBoundedFeedbackOnPreserving
         version: 1
-        epochs: 25 # 15
-        trials: 40 # 30
+        epochs: 60
+        trials: 40
         device: cuda
         primary_learning_rate:
             min_value: 0
@@ -22,14 +23,14 @@ config:
             min_value: 0.001
             max_value: 0.01
         hue_l2_weight:
-            min_value: 2.0
-            max_value: 7.0
+            min_value: 4.0
+            max_value: 11.0
         affine_l2_weight:
-            min_value: 2.0
-            max_value: 7.0
+            min_value: 4.0
+            max_value: 11.0
         ssim_weight:
-            min_value: 1.0
-            max_value: 2.0
+            min_value: 0.1
+            max_value: 1.0
         rotation_weight:
             min_value: 1.0
             max_value: 1.5
