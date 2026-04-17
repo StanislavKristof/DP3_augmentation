@@ -49,7 +49,7 @@ def do_training(trial, cfg):
     rotation_bound = cfg.config.train_info.rotation_bound
     primary_learning_rate = cfg.config.train_info.primary_learning_rate
     padding_mode = cfg.config.train_info.padding_mode
-    # primary_weight_decay = cfg.config.train_info.primary_weight_decay
+    primary_weight_decay = cfg.config.train_info.primary_weight_decay
 
     hue_augmentator_learning_rate = trial.suggest_float('hue_augmentator_learning_rate', hue_augmentator_learning_rate.min_value, hue_augmentator_learning_rate.max_value)
     affine_augmentator_learning_rate = trial.suggest_float('affine_augmentator_learning_rate', affine_augmentator_learning_rate.min_value, affine_augmentator_learning_rate.max_value)
@@ -71,6 +71,7 @@ def do_training(trial, cfg):
         config.read("credentials.ini")
         wandb_api_key = config["WandB"]["api_key"]
         wandb.login(key=wandb_api_key)
+        wandb.login()
         wandb.init(
             # set the wandb project where this run will be logged
             entity="DP_augmentation_team",
@@ -93,7 +94,7 @@ def do_training(trial, cfg):
         number_of_classes=cfg.datasets.number_of_classes,
         image_size=cfg.datasets.image_size,
         primary_learning_rate=primary_learning_rate,
-        # primary_weight_decay=primary_weight_decay,
+        primary_weight_decay=primary_weight_decay,
         hue_augmentator_learning_rate=hue_augmentator_learning_rate,
         affine_augmentator_learning_rate=affine_augmentator_learning_rate,
         # augmentator_weight_decay=augmentator_weight_decay,

@@ -20,9 +20,10 @@ from icecream import ic
 import timm
 from torchmetrics.image import StructuralSimilarityIndexMeasure
 from torchmetrics.clustering import MutualInfoScore, NormalizedMutualInfoScore
-from typing import Tuple
+from typing import Tuple, List
 import numpy as np
 from torch.nn import functional
+import math
 # import matplotlib.pyplot as plt
 
 class AffineMixLoss(nn.Module):
@@ -654,111 +655,111 @@ class SVHNClassifier(nn.Module):
         return logits
 
 
-class CIFAR10Classifier(nn.Module):
-    """New classifier for CIFAR10. 
-    
-    As proposed by https://github.com/shashwat-shahi in
-    https://github.com/shashwat-shahi/CIFAR-10-Image-Classification
-    """
-    def __init__(
-            self,
-            learning_rate: float
-            ) -> None:
-        super().__init__()
-
-        self.Conv = nn.Sequential(
-            # conv block 1
-            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.BatchNorm2d(64),
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.BatchNorm2d(64),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Dropout(p=0.2),
-
-            # conv block 2
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.BatchNorm2d(128),
-            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.BatchNorm2d(128),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Dropout(p=0.3),
-            # conv block 3
-            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.BatchNorm2d(256),
-            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.BatchNorm2d(256),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Dropout(p=0.4),
-
-            # fully connected layers
-            nn.Flatten(),
-            nn.Linear(4096, 512),
-            nn.ReLU(),
-            nn.BatchNorm1d(512),
-            nn.Dropout(p=0.5),
-            nn.Linear(512, 10),
-            nn.ReLU()
-            
-            # original keras architecture
-            # first conv block
-            # layers.Input(shape=(32, 32, 3)),
-            # layers.Conv2D(64, (3, 3), activation='relu', padding='same'),
-            # layers.BatchNormalization(),
-            # layers.Conv2D(64, (3, 3), activation='relu', padding='same'),
-            # layers.BatchNormalization(),
-            # layers.MaxPooling2D((2, 2)),
-            # layers.Dropout(0.2),
-            # # second conv block
-            # layers.Conv2D(128, (3, 3), activation='relu', padding='same'),
-            # layers.BatchNormalization(),
-            # layers.Conv2D(128, (3, 3), activation='relu', padding='same'),
-            # layers.BatchNormalization(),
-            # layers.MaxPooling2D((2, 2)),
-            # layers.Dropout(0.3),
-            # # second conv block
-            # layers.Conv2D(256, (3, 3), activation='relu', padding='same'),
-            # layers.BatchNormalization(),
-            # layers.Conv2D(256, (3, 3), activation='relu', padding='same'),
-            # layers.BatchNormalization(),
-            # layers.MaxPooling2D((2, 2)),
-            # layers.Dropout(0.4),
-            # # fully connected 
-            # layers.Flatten(),
-            # layers.Dense(512, activation='relu', kernel_regularizer=regularizers.l2(0.001)),
-            # layers.BatchNormalization(),
-            # layers.Dropout(0.5),
-            # layers.Dense(10, activation='softmax')
-        )
-        self.optimizer = torch.optim.Adam(
-            self.parameters(),
-            lr=learning_rate,
-            eps=1e-08, # originally written in keras which uses eps=1-08e by default
-            weight_decay=0.001 # originally used regularizer l2 with 0.001 at the penultimate dense (linear) layer
-        )
-        self.loss_function = nn.CrossEntropyLoss()
-
-    def forward(
-            self,
-            x: torch.Tensor
-            ) -> torch.Tensor:
-        """Compute output based on input x.
-
-        Parameters:
-        x (torch.Tensor):
-            input of the network
-
-        Returns:
-        output of the network
-        """
-        x = x.float()
-        logits = self.Conv.forward(x)
-        return logits
+# class CIFAR10Classifier(nn.Module):
+#     """New classifier for CIFAR10. 
+#     
+#     As proposed by https://github.com/shashwat-shahi in
+#     https://github.com/shashwat-shahi/CIFAR-10-Image-Classification
+#     """
+#     def __init__(
+#             self,
+#             learning_rate: float
+#             ) -> None:
+#         super().__init__()
+# 
+#         self.Conv = nn.Sequential(
+#             # conv block 1
+#             nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, padding=1),
+#             nn.ReLU(),
+#             nn.BatchNorm2d(64),
+#             nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
+#             nn.ReLU(),
+#             nn.BatchNorm2d(64),
+#             nn.MaxPool2d(kernel_size=2, stride=2),
+#             nn.Dropout(p=0.2),
+# 
+#             # conv block 2
+#             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1),
+#             nn.ReLU(),
+#             nn.BatchNorm2d(128),
+#             nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
+#             nn.ReLU(),
+#             nn.BatchNorm2d(128),
+#             nn.MaxPool2d(kernel_size=2, stride=2),
+#             nn.Dropout(p=0.3),
+#             # conv block 3
+#             nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1),
+#             nn.ReLU(),
+#             nn.BatchNorm2d(256),
+#             nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
+#             nn.ReLU(),
+#             nn.BatchNorm2d(256),
+#             nn.MaxPool2d(kernel_size=2, stride=2),
+#             nn.Dropout(p=0.4),
+# 
+#             # fully connected layers
+#             nn.Flatten(),
+#             nn.Linear(4096, 512),
+#             nn.ReLU(),
+#             nn.BatchNorm1d(512),
+#             nn.Dropout(p=0.5),
+#             nn.Linear(512, 10),
+#             nn.ReLU()
+#             
+#             # original keras architecture
+#             # first conv block
+#             # layers.Input(shape=(32, 32, 3)),
+#             # layers.Conv2D(64, (3, 3), activation='relu', padding='same'),
+#             # layers.BatchNormalization(),
+#             # layers.Conv2D(64, (3, 3), activation='relu', padding='same'),
+#             # layers.BatchNormalization(),
+#             # layers.MaxPooling2D((2, 2)),
+#             # layers.Dropout(0.2),
+#             # # second conv block
+#             # layers.Conv2D(128, (3, 3), activation='relu', padding='same'),
+#             # layers.BatchNormalization(),
+#             # layers.Conv2D(128, (3, 3), activation='relu', padding='same'),
+#             # layers.BatchNormalization(),
+#             # layers.MaxPooling2D((2, 2)),
+#             # layers.Dropout(0.3),
+#             # # second conv block
+#             # layers.Conv2D(256, (3, 3), activation='relu', padding='same'),
+#             # layers.BatchNormalization(),
+#             # layers.Conv2D(256, (3, 3), activation='relu', padding='same'),
+#             # layers.BatchNormalization(),
+#             # layers.MaxPooling2D((2, 2)),
+#             # layers.Dropout(0.4),
+#             # # fully connected 
+#             # layers.Flatten(),
+#             # layers.Dense(512, activation='relu', kernel_regularizer=regularizers.l2(0.001)),
+#             # layers.BatchNormalization(),
+#             # layers.Dropout(0.5),
+#             # layers.Dense(10, activation='softmax')
+#         )
+#         self.optimizer = torch.optim.Adam(
+#             self.parameters(),
+#             lr=learning_rate,
+#             eps=1e-08, # originally written in keras which uses eps=1-08e by default
+#             weight_decay=0.001 # originally used regularizer l2 with 0.001 at the penultimate dense (linear) layer
+#         )
+#         self.loss_function = nn.CrossEntropyLoss()
+# 
+#     def forward(
+#             self,
+#             x: torch.Tensor
+#             ) -> torch.Tensor:
+#         """Compute output based on input x.
+# 
+#         Parameters:
+#         x (torch.Tensor):
+#             input of the network
+# 
+#         Returns:
+#         output of the network
+#         """
+#         x = x.float()
+#         logits = self.Conv.forward(x)
+#         return logits
 
 # class CIFAR10Classifier(nn.Module):
 #     """Custom model based on model used in DP_old/CIFAR10_fixed_small_inputs.6.
@@ -813,8 +814,160 @@ class CIFAR10Classifier(nn.Module):
 #         x = x.float()
 #         logits = self.Conv.forward(x)
 #         return logits
+"""Resnet for CIFAR10
 
-        
+Resnet for CIFAR10, based on "Deep Residual Learning for Image Recognition".
+This is based on TorchVision's implementation of ResNet for ImageNet, with appropriate
+changes for the 10-class Cifar-10 dataset.
+This ResNet also has layer gates, to be able to dynamically remove layers.
+
+@inproceedings{DBLP:conf/cvpr/HeZRS16,
+    author    = {Kaiming He and Xiangyu Zhang and Shaoqing Ren and Jian Sun},
+    title     = {Deep Residual Learning for Image Recognition},
+    booktitle = {{CVPR}},
+    pages     = {770--778},
+    publisher = {{IEEE} Computer Society},
+    year      = {2016}
+}
+
+"""
+# __all__ = [
+#     'resnet20_cifar_fp4', 'resnet32_cifar_fp4', 'resnet44_cifar_fp4',
+#     'resnet56_cifar_fp4', 'resnet20_cifar_sfp4', 'resnet32_cifar_sfp4',
+#     'resnet44_cifar_sfp4', 'resnet56_cifar_sfp4', 'resnet20_cifar',
+#     'resnet32_cifar', 'resnet44_cifar', 'resnet56_cifar'
+# ]
+
+def conv3x3(conv2d, in_planes, out_planes, stride=1):
+    """3x3 convolution with padding"""
+    return conv2d(in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False)
+
+
+class BasicBlock(nn.Module):
+    expansion = 1
+
+    def __init__(self, conv, block_gates, inplanes, planes, stride=1, downsample=None):
+        super(BasicBlock, self).__init__()
+        self.block_gates = block_gates
+        self.conv1 = conv3x3(conv, inplanes, planes, stride)
+        self.bn1 = nn.BatchNorm2d(planes)
+        self.relu1 = nn.ReLU()  # To enable layer removal inplace must be False
+        self.conv2 = conv3x3(conv, planes, planes)
+        self.bn2 = nn.BatchNorm2d(planes)
+        self.relu2 = nn.ReLU()
+        self.downsample = downsample
+        self.stride = stride
+        # self.residual_eltwiseadd = EltwiseAdd() # stačí plusko
+
+        # self.scaling_a = ScalingLayer(planes)
+        # self.scaling_b = ScalingLayer(planes)
+        # if downsample is not None:
+        #     self.scaling_a = None
+        #     self.scaling_b = None
+
+    def forward(self, x):
+        residual = out = x
+
+        if self.block_gates[0]:
+            out = self.conv1(x)
+            out = self.bn1(out)
+            out = self.relu1(out)
+
+        if self.block_gates[1]:
+            out = self.conv2(out)
+            out = self.bn2(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+        # else:
+        #     residual = self.scaling_a(residual)
+        #     out = self.scaling_b(out)
+
+        # out = self.residual_eltwiseadd(residual, out)
+        out = residual + out
+        out = self.relu2(out)
+
+        return out
+
+
+class ResNetCifar(nn.Module):
+
+    def __init__(
+            self,
+            conv: nn.modules.conv,
+            block: nn.Module,
+            layers: List[int],
+            learning_rate: float,
+            weight_decay: float,
+            num_classes: int = 10
+            ) -> None:
+        self.nlayers = 0
+        # Each layer manages its own gates
+        self.layer_gates = []
+        for layer in range(3):
+            # For each of the 3 layers, create block gates: each block has two layers
+            self.layer_gates.append([])  # [True, True] * layers[layer])
+            for blk in range(layers[layer]):
+                self.layer_gates[layer].append([True, True])
+
+        self.inplanes = 16  # 64
+        super(ResNetCifar, self).__init__()
+        self.loss_function = nn.CrossEntropyLoss()
+        self.features = [
+            nn.Conv2d(3, self.inplanes, kernel_size=(3,3), stride=(1,1), padding=1, bias=False),
+            nn.BatchNorm2d(self.inplanes),
+            nn.ReLU(), # nn.GELU(),
+            self._make_layer(self.layer_gates[0], conv, block, 16, layers[0]),
+            self._make_layer(self.layer_gates[1], conv, block, 32, layers[1], stride=2),
+            self._make_layer(self.layer_gates[2], conv, block, 64, layers[2], stride=2),
+            nn.AvgPool2d(8, stride=1),
+            nn.Flatten()
+        ]
+
+        self.features = nn.Sequential(*self.features)
+
+        self.classifier = nn.Sequential(*[
+            nn.Linear(64 * block.expansion, num_classes)
+        ])
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d) or isinstance(m, conv):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+        self.optimizer = torch.optim.Adam(
+            self.parameters(),
+            lr=learning_rate,
+        #     eps=1e-08, # originally written in keras which uses eps=1-08e by default
+        #     weight_decay=0.001 # originally used regularizer l2 with 0.001 at the penultimate dense (linear) layer
+        )
+
+    def _make_layer(self, layer_gates, conv, block, planes, blocks, stride=1):
+        downsample = None
+        if stride != 1 or self.inplanes != planes * block.expansion:
+            downsample = nn.Sequential(
+                conv(self.inplanes, planes * block.expansion, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(planes * block.expansion),
+            )
+
+        layers = []
+        layers.append(block(conv, layer_gates[0], self.inplanes, planes, stride, downsample))
+        self.inplanes = planes * block.expansion
+        for i in range(1, blocks):
+            layers.append(block(conv, layer_gates[i], self.inplanes, planes))
+
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = x.float()
+        phi = self.features(x)
+        x = self.classifier(phi)
+
+        return x
+
+
 class NeuralNetwork(nn.Module):
     """The actual classifier."""
 
@@ -824,7 +977,7 @@ class NeuralNetwork(nn.Module):
             number_of_classes: int,
             image_size: int,
             learning_rate: float,
-            # weight_decay: float,
+            weight_decay: float,
             epochs: int
             ) -> None:
         """Create model's architecture.
@@ -847,7 +1000,7 @@ class NeuralNetwork(nn.Module):
         self.optimizer = torch.optim.Adam(
             self.parameters(),
             lr=learning_rate,
-            # weight_decay=weight_decay
+            weight_decay=weight_decay
         )
         #self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.optimizer, T_max=epochs/256)
 
@@ -876,7 +1029,7 @@ def get_models(
         number_of_classes: int,
         image_size: int,
         primary_learning_rate: float,
-        # primary_weight_decay: float,
+        primary_weight_decay: float,
         hue_augmentator_learning_rate: float,
         affine_augmentator_learning_rate: float,
         # augmentator_weight_decay: float,
@@ -907,13 +1060,45 @@ def get_models(
         feature_extractor = CIFAR10Classifier(
             learning_rate=primary_learning_rate,
         ).to(device)
+    elif feature_extractor == "resnet20_cifar":
+        feature_extractor = ResNetCifar(
+            conv=nn.Conv2d,
+            block=BasicBlock,
+            layers=[3, 3, 3],
+            learning_rate=primary_learning_rate,
+            weight_decay=primary_weight_decay
+            ).to(device)
+    elif feature_extractor == "resnet32_cifar":
+        feature_extractor = ResNetCifar(
+            conv=nn.Conv2d,
+            block=BasicBlock,
+            layers=[5, 5, 5],
+            learning_rate=primary_learning_rate,
+            weight_decay=primary_weight_decay
+            ).to(device)
+    elif feature_extractor == "resnet44_cifar":
+        feature_extractor = ResNetCifar(
+            conv=nn.Conv2d,
+            block=BasicBlock,
+            layers=[7, 7, 7],
+            learning_rate=primary_learning_rate,
+            weight_decay=primary_weight_decay
+            ).to(device)
+    elif feature_extractor == "resnet56_cifar":
+        feature_extractor = ResNetCifar(
+            conv=nn.Conv2d,
+            block=BasicBlock,
+            layers=[9, 9, 9],
+            learning_rate=primary_learning_rate,
+            weight_decay=primary_weight_decay
+            ).to(device)
     else:
         feature_extractor = NeuralNetwork(
             feature_extractor=feature_extractor,
             number_of_classes=number_of_classes,
             image_size=image_size,
             learning_rate=primary_learning_rate,
-            # weight_decay=primary_weight_decay,
+            weight_decay=primary_weight_decay,
             epochs=epochs
         ).to(device)
 

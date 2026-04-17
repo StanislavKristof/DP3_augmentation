@@ -22,6 +22,7 @@ with warnings.catch_warnings(action="ignore"):
 from utils import get_data_file_path
 import albumentations as A
 import matplotlib.pyplot as plt
+from torchvision import datasets, transforms
 
 
 def convert_image_tensor_to_float(image: np.ndarray) -> torch.Tensor:
@@ -477,7 +478,6 @@ class Covid19Dataset(Dataset):
         # return image, label, image_path
         return image, label, idx
 
-
 def get_data(
         batch_size: int,
         num_workers: int,
@@ -495,9 +495,33 @@ def get_data(
     Returns:
     tuple consisting of two DataLoaders (train and test)
     """
-    # Instantiate datasets
-    train_data = instantiate(data.train)
-    test_data = instantiate(data.test)
+    # augmentations: https://github.com/pytorch/examples/blob/main/imagenet/main.py#L244
+    if data.train["_target_"] == "data_module.ImageNet":
+        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        train_data = datasets.ImageFolder(
+            root=data.train["dataset_path"],
+            transform=transforms.Compose([
+                transforms.RandomResizedCrop(data.image_size),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                normalize,
+            ])
+    )
+    else:
+        train_data = instantiate(data.train)
+    if data.test["_target_"] == "data_module.ImageNet":
+        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        test_data = datasets.ImageFolder(
+            root=data.test["dataset_path"],
+            transform=transforms.Compose([
+                transforms.RandomResizedCrop(224),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                normalize,
+            ])
+    )
+    else:
+        test_data = instantiate(data.test)
 
     # Create data loaders.
     train_dataloader = DataLoader(
@@ -512,11 +536,13 @@ def get_data(
         shuffle=True,
         num_workers=num_workers
         )
-    for x, y, _ in train_dataloader:
+    for batch in train_dataloader:
+        x, y = batch[0], batch[1]
         print(f"Shape of x [N, C, H, W]: {x.shape}")
         print(f"Shape of labels: {y.shape} {y.dtype}")
         break
-    for x, y, _ in test_dataloader:
+    for batch in test_dataloader:
+        x, y = batch[0], batch[1]
         print(f"Shape of x [N, C, H, W]: {x.shape}")
         print(f"Shape of labels: {y.shape} {y.dtype}")
         break
