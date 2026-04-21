@@ -58,6 +58,7 @@ def train_epoch(
     metric_collection.add_metric("primary_loss")
     metric_collection.add_metric("accuracy")
     metric_collection.add_metric("top5_accuracy")
+    metric_collection.add_metric("top10_accuracy")
     primary_model.train()
     if to_be_augmented or True:
         metric_collection.add_metric("hue_augmentator_loss")
@@ -71,7 +72,7 @@ def train_epoch(
     hue_augmentator.train()
     affine_augmentator.train()
 
-    if to_be_augmented:
+    if to_be_augmented and to_save_augmented:
         for x, y, _ in dataloader:
             to_save_shape = (len(dataloader.dataset), x.shape[1], x.shape[2], x.shape[3])
             # to_save_hue = np.zeros(to_save_shape)
@@ -109,13 +110,13 @@ def train_epoch(
                 # save affine
                 x_hat_copy = torch.clone(x_hat_image).cpu()
                 x_hat_copy = x_hat_copy.detach().cpu().numpy()
-                if to_be_augmented:
+                if to_be_augmented and to_save_augmented:
                     to_save["affine"][indices[i]] = x_hat_copy
 
                 # save hue
                 x_hue_copy = torch.clone(x_hue_augmented_image).cpu()
                 x_hue_copy = x_hue_copy.detach().cpu().numpy()
-                if to_be_augmented:
+                if to_be_augmented and to_save_augmented:
                     to_save["hue"][indices[i]] = x_hue_copy
 
             hue_aug_loss, ssim_loss, hue_l2_loss = hue_augmentator.loss_function(
@@ -191,17 +192,15 @@ def train_epoch(
 
         # top 5 accuracy
         values, indices = y_hat.topk(5)
-        # ic(indices)
-        # ic(type(indices))
-        # ic(indices.shape)
-        # ic(y.unsqueeze(1).shape)
-        # ic(y.unsqueeze(1) == indices)
         matches = (y.unsqueeze(1) == indices).any(dim=1)
-        # ic((y.unsqueeze(1) == indices).any(dim=1))
-        # ic((y.unsqueeze(1) == indices).any(dim=1).sum().item())
         correct = int(matches.sum().item())
-        # ic(correct)
         metric_collection["top5_accuracy"].add(correct / y.shape[0])
+
+        # top 10 accuracy
+        values, indices = y_hat.topk(10)
+        matches = (y.unsqueeze(1) == indices).any(dim=1)
+        correct = int(matches.sum().item())
+        metric_collection["top10_accuracy"].add(correct / y.shape[0])
 
         progress_bar.set_postfix(metric_collection.get_dict("print"))
     if to_be_augmented and to_save_augmented:
@@ -244,6 +243,7 @@ def val_epoch(
     metric_collection.add_metric("loss")
     metric_collection.add_metric("accuracy")
     metric_collection.add_metric("top5_accuracy")
+    metric_collection.add_metric("top10_accuracy")
     primary_model.eval()
 
     with torch.no_grad():
@@ -271,17 +271,15 @@ def val_epoch(
 
             # top 5 accuracy
             values, indices = y_hat.topk(5)
-            # ic(indices)
-            # ic(type(indices))
-            # ic(indices.shape)
-            # ic(y.unsqueeze(1).shape)
-            # ic(y.unsqueeze(1) == indices)
             matches = (y.unsqueeze(1) == indices).any(dim=1)
-            # ic((y.unsqueeze(1) == indices).any(dim=1))
-            # ic((y.unsqueeze(1) == indices).any(dim=1).sum().item())
             correct = int(matches.sum().item())
-            # ic(correct)
             metric_collection["top5_accuracy"].add(correct / y.shape[0])
+
+            # top 10 accuracy
+            values, indices = y_hat.topk(10)
+            matches = (y.unsqueeze(1) == indices).any(dim=1)
+            correct = int(matches.sum().item())
+            metric_collection["top10_accuracy"].add(correct / y.shape[0])
 
             progress_bar.set_postfix(metric_collection.get_dict("print"))
         return metric_collection.get_dict("wandb"), metric_collection["accuracy"].get_average(),

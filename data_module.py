@@ -502,7 +502,7 @@ def get_data(
             root=data.train["dataset_path"],
             transform=transforms.Compose([
                 transforms.RandomResizedCrop(data.image_size),
-                transforms.RandomHorizontalFlip(),
+                # transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
                 normalize,
             ])
@@ -514,8 +514,8 @@ def get_data(
         test_data = datasets.ImageFolder(
             root=data.test["dataset_path"],
             transform=transforms.Compose([
-                transforms.RandomResizedCrop(224),
-                transforms.RandomHorizontalFlip(),
+                transforms.RandomResizedCrop(data.image_size),
+                # transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
                 normalize,
             ])

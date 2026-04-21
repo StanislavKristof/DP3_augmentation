@@ -4,21 +4,21 @@ defaults:
 
 config:
     model_info:
-        feature_extractor: resnet18.a1_in1k # resnet32_cifar # resnet20_cifar # resnet44_cifar # resnet56_cifar # resnet32ts.ra2_in1k # resnet18.a1_in1k # svhn # cifar10 
+        feature_extractor: resnet50.a1_in1k # resnet32_cifar # resnet20_cifar # resnet44_cifar # resnet56_cifar # resnet32ts.ra2_in1k # resnet18.a1_in1k # svhn # cifar10
         hue_augmentator: hue_augmentator_256 # resnet32ts.ra2_in1k # resnet18.a1_in1k # svhn # cifar10 
     train_info:
         project: DP2
-        name: ResNet18.a1_in1kImageNetBaseline # ResNet18.a1_in1kCovid19NewUNet # ResNet18.a1_in1kCIFAR10NoAugment # ResNet18.a1_in1kCovid19NoAugment # Resnet18CovidBoundedFeedbackOn
+        name: ResNet50.a1_in1kImageNetOurAugment # ResNet18.a1_in1kCovid19NewUNet # ResNet18.a1_in1kCIFAR10NoAugment # ResNet18.a1_in1kCovid19NoAugment # Resnet18CovidBoundedFeedbackOn
         version: 1
         epochs: 60 # 20
-        trials: 40 # 10
+        trials: 50 # 10
         device: cuda
         primary_learning_rate:
             min_value: 0.0001
             max_value: 0.01
         affine_augmentator_learning_rate:
             min_value: 0.001
-            max_value: 0.5
+            max_value: 0.01
         hue_augmentator_learning_rate:
             min_value: 0.001
             max_value: 0.01
@@ -53,6 +53,6 @@ config:
         primary_weight_decay: 0
         batch_size: 64 # 512
         num_workers: 1 # 2
-        to_be_augmented: False
+        to_be_augmented: True
         to_save_augmented: False
         wandb: True
