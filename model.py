@@ -1066,7 +1066,8 @@ def get_models(
             block=BasicBlock,
             layers=[3, 3, 3],
             learning_rate=primary_learning_rate,
-            weight_decay=primary_weight_decay
+            weight_decay=primary_weight_decay,
+            num_classes=number_of_classes
             ).to(device)
     elif feature_extractor == "resnet32_cifar":
         feature_extractor = ResNetCifar(
@@ -1074,7 +1075,8 @@ def get_models(
             block=BasicBlock,
             layers=[5, 5, 5],
             learning_rate=primary_learning_rate,
-            weight_decay=primary_weight_decay
+            weight_decay=primary_weight_decay,
+            num_classes=number_of_classes
             ).to(device)
     elif feature_extractor == "resnet44_cifar":
         feature_extractor = ResNetCifar(
@@ -1082,7 +1084,8 @@ def get_models(
             block=BasicBlock,
             layers=[7, 7, 7],
             learning_rate=primary_learning_rate,
-            weight_decay=primary_weight_decay
+            weight_decay=primary_weight_decay,
+            num_classes=number_of_classes
             ).to(device)
     elif feature_extractor == "resnet56_cifar":
         feature_extractor = ResNetCifar(
@@ -1090,7 +1093,8 @@ def get_models(
             block=BasicBlock,
             layers=[9, 9, 9],
             learning_rate=primary_learning_rate,
-            weight_decay=primary_weight_decay
+            weight_decay=primary_weight_decay,
+            num_classes=number_of_classes
             ).to(device)
     else:
         feature_extractor = NeuralNetwork(

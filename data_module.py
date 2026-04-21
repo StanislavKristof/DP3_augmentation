@@ -276,6 +276,7 @@ class CIFAR100Dataset(Dataset):
                 A.Rotate(p=.1),
                 A.Transpose(p=.1),
             ])
+            self.transform = A.Compose(A.NoOp(p=1))
         elif split == "test":
             self.transform = A.Compose(A.NoOp(p=1))
 
