@@ -83,7 +83,28 @@ class CroppedSVHNDataset(Dataset):
             dataset_path (str): path to the .mat file
         """
         self.data = loadmat(dataset_path)
-        # self.length = 10000
+        if Path(dataset_path).name == "train_32x32.mat":
+            self.split = "train"
+        elif Path(dataset_path).name == "test_32x32.mat":
+            self.split = "test"
+
+        if self.split == "test":
+            self.transform = A.Compose([A.NoOp(p=1)])
+        elif self.split == "train":
+            self.transform = A.Compose([
+                A.Affine(
+                    rotate=(-10,10),
+                    p=0.3
+                ),
+                A.ColorJitter(
+                    brightness=0.2, 
+                    contrast=0.2, 
+                    saturation=0.2, 
+                    hue=0.05, 
+                    p=0.4
+                )
+            ])
+            
         self.length = self.data["X"].shape[-1]
 
     def __len__(self) -> int:
@@ -112,7 +133,13 @@ class CroppedSVHNDataset(Dataset):
 
         # plt.imshow(image)
         # plt.show()
-        # input()
+        if image.max() <= 1:
+            image = (image * 255)
+        image = image.astype(np.uint8)
+        image = self.transform(image=image)["image"]
+        image = image.astype(float) / 255
+        # plt.imshow(image)
+        # plt.show()
         image = np.transpose(image, (2, 0, 1))
 
         return image, label, idx
@@ -151,6 +178,31 @@ class CIFAR10Dataset(Dataset):
             dataset_path (str): path to the datafile
         """
         dataset_path = Path(dataset_path)
+
+        if dataset_files == ["test_batch"]:
+            self.split = "test"
+        else:
+            self.split = "train"
+
+
+        if self.split == "test":
+            self.transform = A.Compose([A.NoOp(p=1)])
+        elif self.split == "train":
+            self.transform = A.Compose([
+                A.HorizontalFlip(p=0.5),
+                A.Affine(
+                    rotate=(-10,10),
+                    p=0.3
+                ),
+                A.ColorJitter(
+                    brightness=0.1, 
+                    contrast=0.1, 
+                    saturation=0.1, 
+                    hue=0.05, 
+                    p=0.3
+                )
+            ])
+
 
         self.data = [
             unpickle(dataset_path / dataset_file)[b'data']
@@ -191,6 +243,13 @@ class CIFAR10Dataset(Dataset):
         image = self.data[idx]
         image = image.reshape(3, 32, 32)
         image = image.transpose(1, 2, 0)
+        # plt.imshow(image)
+        # plt.show()
+        if image.max() <= 1:
+            image = (image * 255)
+        image = image.astype(np.uint8)
+        image = self.transform(image=image)["image"]
+        image = image.astype(float) / 255
         # plt.imshow(image)
         # plt.show()
         image = image.transpose(2, 0, 1)
@@ -246,39 +305,21 @@ class CIFAR100Dataset(Dataset):
         split = dataset_path.name
         if split == "train":
             self.transform = A.Compose([
-                A.Sharpen(p=.2),
-                #A.ColorJitter(p=.1, hue=(-.03, .03)), # hue=0
-                #A.Emboss(p=.1),
-                A.HueSaturationValue(p=.1, hue_shift_limit=(-10, 10)),
-                A.ISONoise(p=.1),
-                A.ImageCompression(p=.1, quality_range=(90, 95)),
-                A.InvertImg(p=.05),
-                #A.RGBShift(p=.15),
-                A.OneOf([
-                    A.Solarize(p=.5, threshold_range=(0.8, 0.8)),
-                    A.Solarize(p=.5, threshold_range=(0.9, 0.9)),
-                ], p=.1),
-
-                #A.Superpixels(p=.1, max_size=12, n_segments=(2, 8)),
-
-                A.OneOf([
-                    A.ToGray(p=.6),
-                    A.ToSepia(p=.4),
-                ], p=.1),
-
-                A.CoarseDropout(p=.1),
-                A.HorizontalFlip(p=.1),
-                A.Morphological(p=.15, operation="erosion", scale=3),
-                A.Morphological(p=.15, operation="dilation", scale=3),
-                A.PixelDropout(p=.1, per_channel=True),
-                A.RandomRotate90(p=.1),
-                A.RandomSizedCrop(p=.1, min_max_height=(28, 28), size=(32, 32)),
-                A.Rotate(p=.1),
-                A.Transpose(p=.1),
+                A.HorizontalFlip(p=0.4),
+                A.Affine(
+                    rotate=(-10,10),
+                    p=0.3
+                ),
+                A.ColorJitter(
+                    brightness=0.1, 
+                    contrast=0.1, 
+                    saturation=0.1, 
+                    hue=0.05, 
+                    p=0.2
+                )
             ])
-            self.transform = A.Compose(A.NoOp(p=1))
         elif split == "test":
-            self.transform = A.Compose(A.NoOp(p=1))
+            self.transform = A.Compose([A.NoOp(p=1)])
 
     def __len__(self) -> int:
         """Obtain length of the data.
@@ -308,10 +349,10 @@ class CIFAR100Dataset(Dataset):
 
         fine_label = self.fine_labels[idx]
 
-        # image = self.transform(image=image)["image"]
-        image = image.transpose(2, 0, 1)
+        image = self.transform(image=image)["image"]
         # plt.imshow(image)
         # plt.show()
+        image = image.transpose(2, 0, 1)
 
         return image, fine_label, idx
 
@@ -442,6 +483,18 @@ class Covid19Dataset(Dataset):
             dataset_path (str): path to the datafile
         """
         self.dataset_path = Path(dataset_path)
+        self.split = self.dataset_path.name
+        if self.split == "train":
+            self.transform = A.Compose([
+                A.HorizontalFlip(p=0.3),
+                A.Affine(
+                    rotate=(-5,5),
+                    p=0.3
+                ),
+                A.GaussNoise(p=0.3, std_range=(0.05, 0.2))
+            ])
+        elif self.split == "test":
+            self.transform = A.Compose([A.NoOp(p=1)])
         self.anno_file = pd.read_csv(self.dataset_path / "anno.csv")
         self.length = len(self.anno_file)
         self.labels = ["Covid", "Normal", "Viral Pneumonia"]
@@ -471,12 +524,14 @@ class Covid19Dataset(Dataset):
         height, width, channels = image.shape
         # plt.imshow(image)
         # plt.show()
+        image = self.transform(image=image)["image"]
         image = image / 255
+        # plt.imshow(image)
+        # plt.show()
         image = image.reshape(channels, height, width)
 
         label = self.labels.index(str(Path(image_path).parent))
 
-        # return image, label, image_path
         return image, label, idx
 
 def get_data(

@@ -1,14 +1,14 @@
 defaults:
     - _self_
-    - datasets: CIFAR-100 # ImageNet # CIFAR-10 # Covid19-256 # CIFAR-100 # CIFAR-10 # Covid19-256 # SVHN
+    - datasets: SVHN # ImageNet # CIFAR-10 # Covid19-256 # CIFAR-100 # CIFAR-10 # Covid19-256 # SVHN
 
 config:
     model_info:
-        feature_extractor: resnet32_cifar # resnet32_cifar # resnet20_cifar # resnet44_cifar # resnet56_cifar # resnet32ts.ra2_in1k # resnet18.a1_in1k # svhn # cifar10 
+        feature_extractor: svhn # resnet32_cifar # resnet20_cifar # resnet44_cifar # resnet56_cifar # resnet32ts.ra2_in1k # resnet18.a1_in1k # svhn # cifar10 
         hue_augmentator: hue_augmentator_32 # resnet32ts.ra2_in1k # resnet18.a1_in1k # svhn # cifar10 
     train_info:
         project: DP2
-        name: ResNet32Cifar100OurAugment # ResNet18.a1_in1kCovid19NewUNet # ResNet18.a1_in1kCIFAR10NoAugment # ResNet18.a1_in1kCovid19NoAugment # Resnet18CovidBoundedFeedbackOn
+        name: SVHNPredefinedAugment # ResNet18.a1_in1kCIFAR10NoAugment # ResNet18.a1_in1kCovid19NoAugment # Resnet18CovidBoundedFeedbackOn
         version: 1
         epochs: 60
         trials: 30
@@ -53,6 +53,6 @@ config:
         primary_weight_decay: 0
         batch_size: 64 # 512
         num_workers: 1 # 2
-        to_be_augmented: True
-        to_save_augmented: True
+        to_be_augmented: False
+        to_save_augmented: False
         wandb: True

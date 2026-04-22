@@ -1,17 +1,17 @@
 defaults:
     - _self_
-    - datasets: CIFAR-100 # ImageNet # CIFAR-10 # Covid19-256 # CIFAR-100 # CIFAR-10 # Covid19-256 # SVHN
+    - datasets: Covid19-256 # ImageNet # CIFAR-10 # Covid19-256 # CIFAR-100 # CIFAR-10 # Covid19-256 # SVHN
 
 config:
     model_info:
-        feature_extractor: resnet32_cifar # resnet32_cifar # resnet20_cifar # resnet44_cifar # resnet56_cifar # resnet32ts.ra2_in1k # resnet18.a1_in1k # svhn # cifar10 
-        hue_augmentator: hue_augmentator_32 # resnet32ts.ra2_in1k # resnet18.a1_in1k # svhn # cifar10 
+        feature_extractor: resnet18.a1_in1k # resnet32_cifar # resnet20_cifar # resnet44_cifar # resnet56_cifar # resnet32ts.ra2_in1k # resnet18.a1_in1k # svhn # cifar10 
+        hue_augmentator: hue_augmentator_256 # resnet32ts.ra2_in1k # resnet18.a1_in1k # svhn # cifar10 
     train_info:
         project: DP2
-        name: ResNet32Cifar100Baseline # ResNet18.a1_in1kCovid19NewUNet # ResNet18.a1_in1kCIFAR10NoAugment # ResNet18.a1_in1kCovid19NoAugment # Resnet18CovidBoundedFeedbackOn
+        name: ResNet18.a1_in1kCovid19PredefinedAugment # ResNet18.a1_in1kCIFAR10NoAugment # ResNet18.a1_in1kCovid19NoAugment # Resnet18CovidBoundedFeedbackOn
         version: 1
         epochs: 60
-        trials: 30
+        trials: 40
         device: cuda
         primary_learning_rate:
             min_value: 0.0001

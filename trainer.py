@@ -57,8 +57,8 @@ def train_epoch(
     metric_collection = MetricsCollection("train")
     metric_collection.add_metric("primary_loss")
     metric_collection.add_metric("accuracy")
-    metric_collection.add_metric("top5_accuracy")
-    metric_collection.add_metric("top10_accuracy")
+    # metric_collection.add_metric("top5_accuracy")
+    # metric_collection.add_metric("top10_accuracy")
     primary_model.train()
     if to_be_augmented or True:
         metric_collection.add_metric("hue_augmentator_loss")
@@ -191,16 +191,22 @@ def train_epoch(
         metric_collection["accuracy"].add(correct / y.shape[0])
 
         # top 5 accuracy
-        values, indices = y_hat.topk(5)
-        matches = (y.unsqueeze(1) == indices).any(dim=1)
-        correct = int(matches.sum().item())
-        metric_collection["top5_accuracy"].add(correct / y.shape[0])
+        try:
+            values, indices = y_hat.topk(5)
+            matches = (y.unsqueeze(1) == indices).any(dim=1)
+            correct = int(matches.sum().item())
+            metric_collection["top5_accuracy"].add(correct / y.shape[0])
+        except RuntimeError: # if the dataset has less than 5 classes
+            pass
 
         # top 10 accuracy
-        values, indices = y_hat.topk(10)
-        matches = (y.unsqueeze(1) == indices).any(dim=1)
-        correct = int(matches.sum().item())
-        metric_collection["top10_accuracy"].add(correct / y.shape[0])
+        try:
+            values, indices = y_hat.topk(10)
+            matches = (y.unsqueeze(1) == indices).any(dim=1)
+            correct = int(matches.sum().item())
+            metric_collection["top10_accuracy"].add(correct / y.shape[0])
+        except RuntimeError: # if the dataset has less than 10 classes
+            pass
 
         progress_bar.set_postfix(metric_collection.get_dict("print"))
     if to_be_augmented and to_save_augmented:
@@ -270,16 +276,22 @@ def val_epoch(
             metric_collection["accuracy"].add(correct / y.shape[0])
 
             # top 5 accuracy
-            values, indices = y_hat.topk(5)
-            matches = (y.unsqueeze(1) == indices).any(dim=1)
-            correct = int(matches.sum().item())
-            metric_collection["top5_accuracy"].add(correct / y.shape[0])
+            try:
+                values, indices = y_hat.topk(5)
+                matches = (y.unsqueeze(1) == indices).any(dim=1)
+                correct = int(matches.sum().item())
+                metric_collection["top5_accuracy"].add(correct / y.shape[0])
+            except RuntimeError: # if the dataset has less than 5 classes
+                pass
 
             # top 10 accuracy
-            values, indices = y_hat.topk(10)
-            matches = (y.unsqueeze(1) == indices).any(dim=1)
-            correct = int(matches.sum().item())
-            metric_collection["top10_accuracy"].add(correct / y.shape[0])
+            try:
+                values, indices = y_hat.topk(10)
+                matches = (y.unsqueeze(1) == indices).any(dim=1)
+                correct = int(matches.sum().item())
+                metric_collection["top10_accuracy"].add(correct / y.shape[0])
+            except RuntimeError: # if the dataset has less than 10 classes
+                pass
 
             progress_bar.set_postfix(metric_collection.get_dict("print"))
         return metric_collection.get_dict("wandb"), metric_collection["accuracy"].get_average(),

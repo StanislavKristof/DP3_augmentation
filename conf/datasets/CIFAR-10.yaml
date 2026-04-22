@@ -1,0 +1,17 @@
+image_size: 32
+number_of_classes: 10
+train:
+  _target_: data_module.CIFAR10Dataset
+  dataset_path: data/DP/CIFAR-10/cifar-10-batches-py 
+  dataset_files:
+    - data_batch_1
+    - data_batch_2
+    - data_batch_3
+    - data_batch_4
+    - data_batch_5
+
+test:
+  _target_: data_module.CIFAR10Dataset
+  dataset_path: data/DP/CIFAR-10/cifar-10-batches-py 
+  dataset_files:
+    - test_batch

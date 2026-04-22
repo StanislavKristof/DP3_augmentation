@@ -1,0 +1,10 @@
+image_size: 32
+number_of_classes: 10
+
+train:
+  _target_: data_module.CroppedSVHNDataset
+  dataset_path: data/DP/SVHN/train_32x32.mat
+
+test:
+  _target_: data_module.CroppedSVHNDataset
+  dataset_path: data/DP/SVHN/test_32x32.mat

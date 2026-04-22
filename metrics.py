@@ -40,6 +40,8 @@ class Metric():
         Returns:
         average of all added values
         """
+        if self.len == 0:
+            return 0
         return self.sum / self.len
 
     def get_sum(self) -> float:
